@@ -1,4 +1,4 @@
-from typing import *
+from typing import Dict, List
 import random
 
 class randomizer:
@@ -14,6 +14,7 @@ class randomizer:
             self.objects[key] = self.objects[key] * 100.0/percentTotal
 
         self.objects = dict(sorted(self.objects.items(), key=lambda item: item[1], reverse=False))
+        self._remaining = self.objects.copy()
 
 
         if (percentTotal < 100):
@@ -29,3 +30,38 @@ class randomizer:
             if seed < cumulative:
                 return key
         raise ValueError("error")
+
+    def generateRandomOrder(self) -> List[str]:
+        """Return every item once, drawing by remaining relative weights.
+
+        Each call uses a fresh pool without changing the selector's state.
+        Zero-weight items follow positive-weight items in shuffled order.
+        """
+        remaining = self.objects.copy()
+        order = []
+        while remaining:
+            if not any(remaining.values()):
+                tail = list(remaining)
+                random.shuffle(tail)
+                order.extend(tail)
+                break
+            selected = random.choices(
+                list(remaining), weights=list(remaining.values()), k=1
+            )[0]
+            order.append(selected)
+            del remaining[selected]
+        return order
+
+    def getRandomAndRemove(self) -> str:
+        """Draw by weight without replacement, independently of getRandom().
+
+        Raises:
+            ValueError: If all items have already been drawn.
+        """
+        if not self._remaining:
+            raise ValueError("No items remaining to select.")
+        selected = random.choices(
+            list(self._remaining), weights=list(self._remaining.values()), k=1
+        )[0]
+        del self._remaining[selected]
+        return selected
